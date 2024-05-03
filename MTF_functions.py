@@ -6,6 +6,7 @@ Created on Wed Oct 27 21:37:00 2021
 """
 import numpy as np
 import cv2
+import pandas as pd
 from Fenster_RS import Hamming
 
 def read_image_optris_pi450(file_name, norm = True):
@@ -22,6 +23,33 @@ def read_image_optris_pi450(file_name, norm = True):
     gray_norm = (gray - gmin)/(gmax- gmin)
     if file_name[-5] == 'H': # ...wenn Kante horizontal
         gray_norm = cv2.rotate(gray_norm, cv2.ROTATE_90_CLOCKWISE)
+    if norm == True:
+        return gray_norm
+    else:
+        return gray
+
+def read_image_npy(file_name):
+    """
+    read image file
+    """
+    if file_name[-4:] == ".npy":
+        gray = np.load(file_name)
+    else:
+        img = cv2.imread(file_name)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    if len(np.shape(gray)) == 3:
+        gray = np.mean(gray,0)
+    return gray
+
+def flir_csv2npy(fname, norm=True):
+
+    df = pd.read_csv(fname, sep = ';', decimal = ',', on_bad_lines='skip', skiprows=2) # skip header
+    df = df.drop('Frame 1', axis=1) # Delete first column called Frame 1 because all values in there are NaN
+    gray = df.to_numpy()
+    gmax, gmin = gray.max(), gray.min()
+    gray_norm = (gray - gmin)/(gmax- gmin)
+    if any(x not in fname for x in ('v', 'V')): # ...wenn Kante horizontal
+        pass #gray_norm = cv2.rotate(gray_norm, cv2.ROTATE_90_CLOCKWISE)
     if norm == True:
         return gray_norm
     else:
